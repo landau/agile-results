@@ -48,7 +48,7 @@ go run main.go
   - A verbose mode would be nice to see underlying commands.
   - Modify to accept card name as command line input via prompt
   - 100% test coverage at this point is mandatory.
-  - Setup travis
+  - ~~Setup travis~~
 - Sets a label(s) for new card
   - Cache label data in file (need a way(s) to refresh cache)
   - This feels better as a prompt style program because I don't want to type out
