@@ -6,7 +6,7 @@ Trello Workflows for an [Agile Results](https://gettingresults.com/) lifestyle.
 
 ![Under Construction](https://media1.tenor.com/images/83592060cb2d2cf51e98a5809aeb60d3/tenor.gif)
 
-### Prereq
+## Prereq
 
 Set the following env vars:
 
@@ -30,6 +30,8 @@ curl -s "https://api.trello.com/1/boards/$TRELLO_BOARD_ID/lists?key=$TRELLO_API_
 ```
 
 ## Create test card in a specific column
+
+> PROTIP `go run main.go --help`
 
 Make sure the `TRELLO_LIST_ID` env var is set.
 
