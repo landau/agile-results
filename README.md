@@ -8,8 +8,6 @@ Trello Workflows for an [Agile Results](https://gettingresults.com/) lifestyle.
 
 ## MVP
 
-- [Setup deps](https://blog.jetbrains.com/go/2020/03/16/working-with-go-modules-dependency-management/)
-  - https://github.com/adlio/trello
 - Create a card in daily column
   - Create card without user input. This should print a link to the user so that
     they can jump right to the card.
