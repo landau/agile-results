@@ -1,5 +1,7 @@
 # agile-results
 
+[![Build Status](https://travis-ci.com/landau/agile-results.svg?branch=master)](https://travis-ci.com/landau/agile-results)
+
 Trello Workflows for an [Agile Results](https://gettingresults.com/) lifestyle.
 
 ![Under Construction](https://media1.tenor.com/images/83592060cb2d2cf51e98a5809aeb60d3/tenor.gif)
