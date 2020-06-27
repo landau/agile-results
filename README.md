@@ -6,7 +6,7 @@ Trello Workflows for an [Agile Results](https://gettingresults.com/) lifestyle.
 
 ![Under Construction](https://media1.tenor.com/images/83592060cb2d2cf51e98a5809aeb60d3/tenor.gif)
 
-### Prereq
+## Prereq
 
 Set the following env vars:
 
@@ -31,6 +31,8 @@ curl -s "https://api.trello.com/1/boards/$TRELLO_BOARD_ID/lists?key=$TRELLO_API_
 
 ## Create test card in a specific column
 
+> PROTIP `go run main.go --help`
+
 Make sure the `TRELLO_LIST_ID` env var is set.
 
 ```sh
@@ -42,7 +44,7 @@ go run main.go
 - Create a card in daily column
   - ~~Create card without user input. This should print a link to the user so that
     they can jump right to the card.~~
-  - A verbose mode would be nice to see underlying commands.
+  - ~~A verbose mode would be nice to see underlying commands.~~
   - Modify to accept card name as command line input via prompt
   - 100% test coverage at this point is mandatory.
   - ~~Setup travis~~
