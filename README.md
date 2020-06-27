@@ -8,9 +8,6 @@ Trello Workflows for an [Agile Results](https://gettingresults.com/) lifestyle.
 
 ### Prereq
 
-In order to start creating cards in a list, you need the list ID. To find a
-specific list ID, you need the board ID. See instructions below.
-
 Set the following env vars:
 
 - [`TRELLO_API_KEY`](https://trello.com/app-key)
