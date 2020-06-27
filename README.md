@@ -2,8 +2,6 @@
 
 Trello Workflows for an [Agile Results](https://gettingresults.com/) lifestyle.
 
-> This project provides workflows for common task creation using Trello.
-
 ![Under Construction](https://media1.tenor.com/images/83592060cb2d2cf51e98a5809aeb60d3/tenor.gif)
 
 ## How to Use it
@@ -40,7 +38,7 @@ curl -s "https://api.trello.com/1/boards/$TRELLO_BOARD_ID/lists?key=$TRELLO_API_
 
 - Create a card in daily column
   - ~~Create card without user input. This should print a link to the user so that
-    they can jump right to the card.
+    they can jump right to the card.~~
   - A verbose mode would be nice to see underlying commands.
   - Modify to accept card name as command line input via prompt
   - 100% test coverage at this point is mandatory.
