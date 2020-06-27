@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
@@ -21,6 +22,13 @@ func parseFlags() Flags {
 	return Flags{verbose: *verbose}
 }
 
+func promptForString(s string) string {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Printf(s)
+	res, _ := reader.ReadString('\n')
+	return res
+}
+
 func main() {
 
 	flags := parseFlags()
@@ -38,8 +46,10 @@ func main() {
 
 	logrus.Debugf("Creating card  on list %s\n", listID)
 
+	cardName := promptForString("Card Name: ")
+
 	// FIXME: This should go to end of list.
-	card := &trello.Card{Name: "Test", IDList: listID}
+	card := &trello.Card{Name: cardName, IDList: listID}
 	err := client.CreateCard(card, trello.Defaults())
 
 	if err != nil {
