@@ -4,20 +4,16 @@ Trello Workflows for an [Agile Results](https://gettingresults.com/) lifestyle.
 
 ![Under Construction](https://media1.tenor.com/images/83592060cb2d2cf51e98a5809aeb60d3/tenor.gif)
 
-## How to Use it
+### Prereq
+
+In order to start creating cards in a list, you need the list ID. To find a
+specific list ID, you need the board ID. See instructions below.
 
 Set the following env vars:
 
 - [`TRELLO_API_KEY`](https://trello.com/app-key)
-- `TRELLO_API_KEY` (You can gen a token from the API KEY page)
+- `TRELLO_API_KEY` (You can gen a token from the API key page above)
 - `TRELLO_LIST_ID` (See instructions below for aquiring this value)
-
-> In order to start creating cards in a list, you need the list ID. To find a
-> specific list ID, you need the board ID. See instructions below.
-
-```sh
-Run `go run main.go`
-```
 
 ### Find your Board ID
 
@@ -32,6 +28,14 @@ curl -s "https://api.trello.com/1/members/me/boards?key=$TRELLO_API_KEY&token=$T
 curl -s "https://api.trello.com/1/boards/$TRELLO_BOARD_ID/lists?key=$TRELLO_API_KEY&token=$TRELLO_API_TOKEN" | \
   jq ".[] | { id, name }"
 
+```
+
+## Create test card in a specific column
+
+Make sure the `TRELLO_LIST_ID` env var is set.
+
+```sh
+go run main.go
 ```
 
 ## MVP
