@@ -4,4 +4,6 @@ go:
   - "1.14"
   - master
 
-script: go vet
+script:
+  - go vet
+  - go test ./...

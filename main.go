@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"landau/agile-results/src/prompt"
 	"os"
 
 	"github.com/adlio/trello"
@@ -45,12 +46,20 @@ func main() {
 	client := trello.NewClient(apiKey, token)
 
 	logrus.Debugf("Creating card  on list %s\n", listID)
+	logrus.Debug("Awaiting user input")
 
-	cardName := promptForString("Card Name: ")
+	stringPrompter := prompt.NewStringPrompter(
+		bufio.NewReader(os.Stdin), bufio.NewWriter(os.Stdout),
+	)
+	cardName, err := stringPrompter.Prompt("Card Name: ")
+
+	if err != nil {
+		logrus.Fatalf("Failed: %v", err)
+	}
 
 	// FIXME: This should go to end of list.
 	card := &trello.Card{Name: cardName, IDList: listID}
-	err := client.CreateCard(card, trello.Defaults())
+	err = client.CreateCard(card, trello.Defaults())
 
 	if err != nil {
 		logrus.Fatalf("Failed: %v", err)
