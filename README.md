@@ -29,11 +29,17 @@ curl -s "https://api.trello.com/1/boards/$TRELLO_BOARD_ID/lists?key=$TRELLO_API_
 
 ```
 
-## Create test card in a specific column
+## Commands
 
 > PROTIP `go run main.go --help`
 
-Make sure the `TRELLO_LIST_ID` env var is set.
+### Create a card based on `TRELLO_LIST_ID`
+
+Adds a new card to the top of a specified list.
+
+You'll be prompted for:
+
+- Card Name
 
 ```sh
 go run main.go
@@ -45,7 +51,7 @@ go run main.go
   - ~~Create card without user input. This should print a link to the user so that
     they can jump right to the card.~~
   - ~~A verbose mode would be nice to see underlying commands.~~
-  - Modify to accept card name as command line input via prompt
+  - ~~Modify to accept card name as command line input via prompt~~
   - 100% test coverage at this point is mandatory.
   - ~~Setup travis~~
 - Sets a label(s) for new card
