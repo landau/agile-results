@@ -23,13 +23,7 @@ func parseFlags() Flags {
 	return Flags{verbose: *verbose}
 }
 
-func promptForString(s string) string {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Printf(s)
-	res, _ := reader.ReadString('\n')
-	return res
-}
-
+// TODO: make this a configurable/testable run function
 func main() {
 
 	flags := parseFlags()
@@ -48,7 +42,7 @@ func main() {
 	logrus.Debugf("Creating card  on list %s\n", listID)
 	logrus.Debug("Awaiting user input")
 
-	stringPrompter := prompt.NewStringPrompter(
+	stringPrompter := prompt.New(
 		bufio.NewReader(os.Stdin), bufio.NewWriter(os.Stdout),
 	)
 	cardName, err := stringPrompter.Prompt("Card Name: ")
