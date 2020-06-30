@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestPrompter_Prompt(t *testing.T) {
+func TestIOPrompter_Prompt(t *testing.T) {
 	type prompterFields struct {
 		reader *bufio.Reader
 		writer *bufio.Writer
@@ -40,7 +40,7 @@ func TestPrompter_Prompt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &Prompter{
+			p := &IOPrompter{
 				reader: tt.fields.reader,
 				writer: tt.fields.writer,
 			}

@@ -5,5 +5,4 @@ go:
   - master
 
 script:
-  - go vet
   - go test ./...
