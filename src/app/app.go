@@ -26,6 +26,7 @@ type Config struct {
 	CardCreator CardCreator
 	Prompter    prompt.Prompter
 	ListID      string
+	Labels      []*trello.Label
 }
 
 // RunApp -
@@ -43,8 +44,16 @@ func RunApp(config *Config) error {
 		return err
 	}
 
+	selectedLabels, err := SelectLabelIDs(config.Labels, prompter)
+	logrus.Debugf("Selected %d labels: %v", len(selectedLabels), selectedLabels)
+
 	// FIXME: This should put the card at the end of  the list.
-	card := &trello.Card{Name: cardName, IDList: config.ListID}
+	card := &trello.Card{
+		IDList:   config.ListID,
+		Name:     cardName,
+		IDLabels: selectedLabels,
+	}
+
 	err = cardCreator.CreateCard(card, trello.Defaults())
 
 	if err != nil {

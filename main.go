@@ -35,12 +35,26 @@ func main() {
 	apiKey := os.Getenv("TRELLO_API_KEY")
 	token := os.Getenv("TRELLO_TOKEN")
 	listID := os.Getenv("TRELLO_LIST_ID")
+	boardID := os.Getenv("TRELLO_BOARD_ID")
 
 	client := trello.NewClient(apiKey, token)
 	client.Logger = logger
 
-	err := app.RunApp(&app.Config{
+	// TODO: refactor this into RunApp
+	board, err := client.GetBoard(boardID, trello.Defaults())
+	if err != nil {
+		logrus.Fatalf("Failed: %v", err)
+	}
+
+	labels, err := board.GetLabels(trello.Defaults())
+
+	if err != nil {
+		logrus.Fatalf("Failed: %v", err)
+	}
+
+	err = app.RunApp(&app.Config{
 		CardCreator: client,
+		Labels:      labels,
 		ListID:      listID,
 		Logrus:      logger,
 		Prompter: prompt.New(
