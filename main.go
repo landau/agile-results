@@ -23,7 +23,6 @@ func parseFlags() Flags {
 	return Flags{verbose: *verbose}
 }
 
-// TODO: make this a configurable/testable run function
 func main() {
 	flags := parseFlags()
 	logger := logrus.New()
