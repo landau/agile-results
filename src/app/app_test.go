@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/adlio/trello"
@@ -33,14 +34,20 @@ func Test_createCurlDelCmd(t *testing.T) {
 	}
 }
 
+type PrompterReturnValue struct {
+	s   string
+	err error
+}
+
 type MockPrompter struct {
-	calls       []string
-	ReturnValue string
+	calls []string
+	// TODO: How do I nest this and use in the code?????
+	ReturnValue PrompterReturnValue
 }
 
 func (p *MockPrompter) Prompt(s string) (string, error) {
 	p.calls = append(p.calls, s)
-	return p.ReturnValue, nil
+	return p.ReturnValue.s, p.ReturnValue.err
 }
 
 type MockCardCreatorCall struct {
@@ -63,14 +70,16 @@ func TestRunApp(t *testing.T) {
 	logger.SetLevel(logrus.FatalLevel)
 
 	listID := "1234"
-	prompter := &MockPrompter{ReturnValue: "Foo"}
+	prompter := &MockPrompter{ReturnValue: PrompterReturnValue{s: "foo,bar", err: nil}}
 	cardCreator := &MockCardCreator{}
+	labels := []*trello.Label{{ID: "abc", Name: "foo"}, {ID: "efg", Name: "bar"}}
 
 	config := &Config{
 		Logrus:      logger,
 		Prompter:    prompter,
 		ListID:      listID,
 		CardCreator: cardCreator,
+		Labels:      labels,
 	}
 
 	t.Run("Successfully creates a card", func(t *testing.T) {
@@ -86,18 +95,23 @@ func TestRunApp(t *testing.T) {
 		assertCallCount(
 			t,
 			len(prompter.calls),
-			1,
-			"Prompter.prompt should only be called once",
+			2,
+			"Prompter.prompt should be called twice",
 		)
 
 		if prompter.calls[0] != "Card Name: " {
 			t.Error("Expected Prompter.Prompt to recevie 'Card Name: '")
 		}
 
-		if prompter.ReturnValue != cardCreator.calls[0].card.Name {
+		prompt2 := fmt.Sprintf("Selected 2 labels (%v, %v): ", labels[0].Name, labels[1].Name)
+		if prompter.calls[1] != prompt2 {
+			t.Errorf("Expected Prompter.Prompt to recevie '%s', got '%s", prompt2, prompter.calls[1])
+		}
+
+		if prompter.ReturnValue.s != cardCreator.calls[0].card.Name {
 			t.Errorf(
-				"s = %v, want %v",
-				prompter.ReturnValue,
+				"Card name should be = %s, but got %s",
+				prompter.ReturnValue.s,
 				cardCreator.calls[0].card.Name,
 			)
 		}
