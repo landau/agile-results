@@ -2,22 +2,37 @@ package prompt
 
 import (
 	"bufio"
+	"strings"
 )
 
-// StringPrompter - Use this to interact with users from input to output
-type StringPrompter struct {
+// Prompter -
+type Prompter interface {
+	Prompt(s string) (string, error)
+}
+
+// IOPrompter - Use this to interact with users from input to output
+type IOPrompter struct {
 	reader *bufio.Reader
 	writer *bufio.Writer
 }
 
 // Prompt - Prompts for a string
-func (p *StringPrompter) Prompt(s string) (res string, err error) {
+func (p *IOPrompter) Prompt(s string) (string, error) {
 	p.writer.WriteString(s)
 	p.writer.Flush()
-	return p.reader.ReadString('\n')
+	// FIXME: pull out result and strip trailing \n
+	res, err := p.reader.ReadString('\n')
+
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimRight(res, "\n"), nil
 }
 
-// NewStringPrompter - A prompter for strings
-func NewStringPrompter(reader *bufio.Reader, writer *bufio.Writer) StringPrompter {
-	return StringPrompter{reader: reader, writer: writer}
+// TODO: shortcut for writing to stdin/out would be NewStdInOutPrompter
+
+// New - A prompter for strings
+func New(reader *bufio.Reader, writer *bufio.Writer) *IOPrompter {
+	return &IOPrompter{reader: reader, writer: writer}
 }

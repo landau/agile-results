@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"flag"
-	"fmt"
+	"landau/agile-results/src/app"
 	"landau/agile-results/src/prompt"
 	"os"
 
@@ -23,19 +23,12 @@ func parseFlags() Flags {
 	return Flags{verbose: *verbose}
 }
 
-func promptForString(s string) string {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Printf(s)
-	res, _ := reader.ReadString('\n')
-	return res
-}
-
 func main() {
-
 	flags := parseFlags()
+	logger := logrus.New()
 
 	if flags.verbose {
-		logrus.SetLevel(logrus.DebugLevel)
+		logger.SetLevel(logrus.DebugLevel)
 	}
 
 	// TODO: assert that these values are set
@@ -44,33 +37,18 @@ func main() {
 	listID := os.Getenv("TRELLO_LIST_ID")
 
 	client := trello.NewClient(apiKey, token)
+	client.Logger = logger
 
-	logrus.Debugf("Creating card  on list %s\n", listID)
-	logrus.Debug("Awaiting user input")
-
-	stringPrompter := prompt.NewStringPrompter(
-		bufio.NewReader(os.Stdin), bufio.NewWriter(os.Stdout),
-	)
-	cardName, err := stringPrompter.Prompt("Card Name: ")
-
-	if err != nil {
-		logrus.Fatalf("Failed: %v", err)
-	}
-
-	// FIXME: This should go to end of list.
-	card := &trello.Card{Name: cardName, IDList: listID}
-	err = client.CreateCard(card, trello.Defaults())
+	err := app.RunApp(&app.Config{
+		CardCreator: client,
+		ListID:      listID,
+		Logrus:      logger,
+		Prompter: prompt.New(
+			bufio.NewReader(os.Stdin), bufio.NewWriter(os.Stdout),
+		),
+	})
 
 	if err != nil {
 		logrus.Fatalf("Failed: %v", err)
 	}
-
-	deleteCmd := fmt.Sprintf(
-		"curl -sXDELETE \"https://api.trello.com/1/cards/%s?key=$TRELLO_API_KEY&token=$TRELLO_API_TOKEN\"",
-		card.ID,
-	)
-	logrus.Infof(
-		"Card %s created successfully!\nID: %s\nURL: %s\nDelete: %s\n",
-		card.Name, card.ID, card.ShortURL, deleteCmd,
-	)
 }
