@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/adlio/trello"
+	"github.com/sirupsen/logrus"
 )
 
 func filter(labels []*trello.Label, f func(l *trello.Label) bool) []*trello.Label {
@@ -55,4 +56,30 @@ func SelectLabelIDs(labels []*trello.Label, prompter prompt.Prompter) ([]string,
 		filterLabelsFromLabelNames(strings.Split(selected, ","), labels),
 		func(l *trello.Label) string { return l.ID },
 	), nil
+}
+
+// LabelFetcher -
+type LabelFetcher interface {
+	Fetch(args trello.Arguments) (labels []*trello.Label, err error)
+}
+
+// TrelloLabelFetcher -
+type TrelloLabelFetcher struct {
+	boardFetcher BoardFetcher
+}
+
+// Fetch -
+func (t *TrelloLabelFetcher) Fetch(args trello.Arguments) (labels []*trello.Label, err error) {
+	board, err := t.boardFetcher.Fetch(trello.Defaults())
+
+	if err != nil {
+		logrus.Fatalf("Failed: %v", err)
+	}
+
+	return board.GetLabels(trello.Defaults())
+}
+
+// NewLabelFetcher -
+func NewLabelFetcher(boardFetcher BoardFetcher) *TrelloLabelFetcher {
+	return &TrelloLabelFetcher{boardFetcher: boardFetcher}
 }

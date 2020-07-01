@@ -42,12 +42,12 @@ type PrompterReturnValue struct {
 type MockPrompter struct {
 	calls []string
 	// TODO: How do I nest this and use in the code?????
-	ReturnValue PrompterReturnValue
+	returnValue PrompterReturnValue
 }
 
 func (p *MockPrompter) Prompt(s string) (string, error) {
 	p.calls = append(p.calls, s)
-	return p.ReturnValue.s, p.ReturnValue.err
+	return p.returnValue.s, p.returnValue.err
 }
 
 type MockCardCreatorCall struct {
@@ -57,7 +57,7 @@ type MockCardCreatorCall struct {
 
 type MockCardCreator struct {
 	calls       []MockCardCreatorCall
-	ReturnValue error
+	returnValue error
 }
 
 func (c *MockCardCreator) CreateCard(card *trello.Card, extraArgs trello.Arguments) error {
@@ -65,25 +65,49 @@ func (c *MockCardCreator) CreateCard(card *trello.Card, extraArgs trello.Argumen
 	return nil
 }
 
+type LabelFetcherReturnValue struct {
+	labels []*trello.Label
+	err    error
+}
+
+type MockLabelFetcher struct {
+	calls       []trello.Arguments
+	returnValue LabelFetcherReturnValue
+}
+
+func (l *MockLabelFetcher) Fetch(args trello.Arguments) (labels []*trello.Label, err error) {
+	l.calls = append(l.calls, args)
+	return l.returnValue.labels, l.returnValue.err
+}
+
 func TestRunApp(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.FatalLevel)
 
 	listID := "1234"
-	prompter := &MockPrompter{ReturnValue: PrompterReturnValue{s: "foo,bar", err: nil}}
+	prompter := &MockPrompter{returnValue: PrompterReturnValue{s: "foo,bar", err: nil}}
 	cardCreator := &MockCardCreator{}
+
 	labels := []*trello.Label{{ID: "abc", Name: "foo"}, {ID: "efg", Name: "bar"}}
+	labelFetcher := &MockLabelFetcher{returnValue: LabelFetcherReturnValue{labels: labels}}
 
 	config := &Config{
-		Logrus:      logger,
-		Prompter:    prompter,
-		ListID:      listID,
-		CardCreator: cardCreator,
-		Labels:      labels,
+		Logrus:       logger,
+		Prompter:     prompter,
+		ListID:       listID,
+		CardCreator:  cardCreator,
+		LabelFetcher: labelFetcher,
 	}
 
-	t.Run("Successfully creates a card", func(t *testing.T) {
+	t.Run("Successfully creates a card with labels", func(t *testing.T) {
 		RunApp(config)
+
+		assertCallCount(
+			t,
+			len(labelFetcher.calls),
+			1,
+			"LabelFetcher.Fetch should only be called once",
+		)
 
 		assertCallCount(
 			t,
@@ -108,11 +132,28 @@ func TestRunApp(t *testing.T) {
 			t.Errorf("Expected Prompter.Prompt to recevie '%s', got '%s", prompt2, prompter.calls[1])
 		}
 
-		if prompter.ReturnValue.s != cardCreator.calls[0].card.Name {
+		if prompter.returnValue.s != cardCreator.calls[0].card.Name {
 			t.Errorf(
 				"Card name should be = %s, but got %s",
-				prompter.ReturnValue.s,
+				prompter.returnValue.s,
 				cardCreator.calls[0].card.Name,
+			)
+		}
+
+		// TODO: use deepequal on entire list here instead
+		if cardCreator.calls[0].card.IDLabels[0] != labels[0].ID {
+			t.Errorf(
+				"Card should have label = %s, but got %s",
+				labels[0].ID,
+				cardCreator.calls[0].card.IDLabels[0],
+			)
+		}
+
+		if cardCreator.calls[0].card.IDLabels[1] != labels[1].ID {
+			t.Errorf(
+				"Card should have label = %s, but got %s",
+				labels[1].ID,
+				cardCreator.calls[0].card.IDLabels[1],
 			)
 		}
 	})

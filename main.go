@@ -40,23 +40,12 @@ func main() {
 	client := trello.NewClient(apiKey, token)
 	client.Logger = logger
 
-	// TODO: refactor this into RunApp
-	board, err := client.GetBoard(boardID, trello.Defaults())
-	if err != nil {
-		logrus.Fatalf("Failed: %v", err)
-	}
-
-	labels, err := board.GetLabels(trello.Defaults())
-
-	if err != nil {
-		logrus.Fatalf("Failed: %v", err)
-	}
-
-	err = app.RunApp(&app.Config{
-		CardCreator: client,
-		Labels:      labels,
-		ListID:      listID,
-		Logrus:      logger,
+	err := app.RunApp(&app.Config{
+		CardCreator:  client,
+		LabelFetcher: app.NewLabelFetcher(app.NewBoardFetcher(boardID, client)),
+		// TODO: move to CardCreator
+		ListID: listID,
+		Logrus: logger,
 		Prompter: prompt.New(
 			bufio.NewReader(os.Stdin), bufio.NewWriter(os.Stdout),
 		),

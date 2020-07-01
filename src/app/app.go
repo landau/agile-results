@@ -22,11 +22,11 @@ type CardCreator interface {
 
 // Config -
 type Config struct {
-	Logrus      *logrus.Logger
-	CardCreator CardCreator
-	Prompter    prompt.Prompter
-	ListID      string
-	Labels      []*trello.Label
+	CardCreator  CardCreator
+	LabelFetcher LabelFetcher
+	ListID       string
+	Logrus       *logrus.Logger
+	Prompter     prompt.Prompter
 }
 
 // RunApp -
@@ -44,10 +44,17 @@ func RunApp(config *Config) error {
 		return err
 	}
 
-	selectedLabels, err := SelectLabelIDs(config.Labels, prompter)
+	labels, err := config.LabelFetcher.Fetch(trello.Defaults())
+
+	if err != nil {
+		return err
+	}
+
+	selectedLabels, err := SelectLabelIDs(labels, prompter)
 	logrus.Debugf("Selected %d labels: %v", len(selectedLabels), selectedLabels)
 
 	// FIXME: This should put the card at the end of  the list.
+	// err = card.MoveToBottomOfList() // How to test this?
 	card := &trello.Card{
 		IDList:   config.ListID,
 		Name:     cardName,
