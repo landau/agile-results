@@ -33,7 +33,7 @@ func main() {
 
 	// TODO: assert that these values are set
 	apiKey := os.Getenv("TRELLO_API_KEY")
-	token := os.Getenv("TRELLO_TOKEN")
+	token := os.Getenv("TRELLO_API_TOKEN")
 	listID := os.Getenv("TRELLO_LIST_ID")
 	boardID := os.Getenv("TRELLO_BOARD_ID")
 

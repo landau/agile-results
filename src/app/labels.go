@@ -26,7 +26,6 @@ func mapLabelsToString(labels []*trello.Label, f func(l *trello.Label) string) [
 
 	for i, label := range labels {
 		mapped[i] = f(label)
-		fmt.Printf("labelid %s", f(label))
 	}
 
 	return mapped
