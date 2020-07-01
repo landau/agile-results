@@ -101,7 +101,7 @@ func TestSelectLabelIDs(t *testing.T) {
 	labels := []*trello.Label{{ID: "id", Name: "name"}}
 
 	t.Run("Returns a list of selected labels", func(t *testing.T) {
-		prompter := &MockPrompter{ReturnValue: PrompterReturnValue{s: labels[0].Name, err: nil}}
+		prompter := &MockPrompter{returnValue: PrompterReturnValue{s: labels[0].Name, err: nil}}
 		got, err := SelectLabelIDs(labels, prompter)
 
 		if err != nil {
@@ -117,7 +117,7 @@ func TestSelectLabelIDs(t *testing.T) {
 
 	t.Run("Returns a list of selected labels", func(t *testing.T) {
 		expectedErr := errors.Errorf("Test error")
-		prompter := &MockPrompter{ReturnValue: PrompterReturnValue{s: "", err: expectedErr}}
+		prompter := &MockPrompter{returnValue: PrompterReturnValue{s: "", err: expectedErr}}
 		_, err := SelectLabelIDs(labels, prompter)
 
 		if err != expectedErr {
