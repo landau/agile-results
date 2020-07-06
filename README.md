@@ -37,9 +37,14 @@ curl -s "https://api.trello.com/1/boards/$TRELLO_BOARD_ID/lists?key=$TRELLO_API_
 
 Adds a new card to the top of a specified list.
 
-You'll be prompted for:
+#### You'll be prompted for
 
 - Card Name
+- Labels (optional)
+
+#### Optional
+
+- Checklist (use `-checklist` flag)
 
 ```sh
 go run main.go
@@ -56,15 +61,16 @@ go run main.go
   - ~~Setup travis~~
 - Sets a label(s) for new card
   - Cache label data in file (need a way(s) to refresh cache)
-  - This feels better as a prompt style program because I don't want to type out
+  - ~~This feels better as a prompt style program because I don't want to type out
     label names or remember numbers. Also, how do I select multiple in a prompt
     style interface? "Select your labels: 1. Health 2. Relationships 3...." could
-    work here via CSV input.
+    work here via CSV input.~~
 - Append a checklist to said card
   - CSV Input
 - Automatically create cards based on checklist
 - Appends links for "checklist item cards" to "parent card"
 - Appends link to parent card from "checklist item cards"
+- Sort command Ideas column based on label
 
 ### Post-MVP
 

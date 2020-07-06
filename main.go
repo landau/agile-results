@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"landau/agile-results/src/app"
+	"landau/agile-results/src/checklist"
 	"landau/agile-results/src/prompt"
 	"os"
 
@@ -13,14 +14,17 @@ import (
 
 // Flags - Supported CLI flags
 type Flags struct {
-	verbose bool
+	verbose      bool
+	hasChecklist bool
 }
 
 // parseFlags - Parses CLI flags
 func parseFlags() Flags {
-	verbose := flag.Bool("v", false, "Verbose")
+	verbose := flag.Bool("v", false, "Show debug logging")
+	hasChecklist := flag.Bool("checklist", false, "Add a checklist to the card")
+
 	flag.Parse()
-	return Flags{verbose: *verbose}
+	return Flags{verbose: *verbose, hasChecklist: *hasChecklist}
 }
 
 func main() {
@@ -40,9 +44,11 @@ func main() {
 	client := trello.NewClient(apiKey, token)
 	client.Logger = logger
 
-	err := app.RunApp(&app.Config{
-		CardCreator:  client,
-		LabelFetcher: app.NewLabelFetcher(app.NewBoardFetcher(boardID, client)),
+	_, err := app.RunApp(&app.Config{
+		CardCreator:      client,
+		ChecklistCreator: checklist.New(client),
+		HasChecklist:     flags.hasChecklist,
+		LabelFetcher:     app.NewLabelFetcher(app.NewBoardFetcher(boardID, client)),
 		// TODO: move to CardCreator
 		ListID: listID,
 		Logrus: logger,
@@ -52,6 +58,6 @@ func main() {
 	})
 
 	if err != nil {
-		logrus.Fatalf("Failed: %v", err)
+		logrus.Fatalf("Failed to create card: %v", err)
 	}
 }

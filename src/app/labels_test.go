@@ -1,6 +1,7 @@
 package app
 
 import (
+	"landau/agile-results/src/prompt"
 	"reflect"
 	"testing"
 
@@ -101,7 +102,7 @@ func TestSelectLabelIDs(t *testing.T) {
 	labels := []*trello.Label{{ID: "id", Name: "name"}}
 
 	t.Run("Returns a list of selected labels", func(t *testing.T) {
-		prompter := &MockPrompter{returnValue: PrompterReturnValue{s: labels[0].Name, err: nil}}
+		prompter := &prompt.MockPrompter{PromptReturnValue: prompt.MockPrompterPromptReturnValue{S: labels[0].Name, Err: nil}}
 		got, err := SelectLabelIDs(labels, prompter)
 
 		if err != nil {
@@ -117,7 +118,7 @@ func TestSelectLabelIDs(t *testing.T) {
 
 	t.Run("Returns a list of selected labels", func(t *testing.T) {
 		expectedErr := errors.Errorf("Test error")
-		prompter := &MockPrompter{returnValue: PrompterReturnValue{s: "", err: expectedErr}}
+		prompter := &prompt.MockPrompter{PromptReturnValue: prompt.MockPrompterPromptReturnValue{S: "", Err: expectedErr}}
 		_, err := SelectLabelIDs(labels, prompter)
 
 		if err != expectedErr {
