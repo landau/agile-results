@@ -79,3 +79,4 @@ go run main.go
     the domain model better.
 - Provide a description for newly created card
 - Create card in any column!
+- Assign user to card
