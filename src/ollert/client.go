@@ -7,7 +7,7 @@ import (
 
 // IClient - interface for client
 type IClient interface {
-	CreateCard(card *trello.Card, args trello.Arguments) (ICard, error)
+	CreateCard(cardConfig *TrelloCardConfig, args trello.Arguments) (ICard, error)
 	GetBoard(boardID string, args trello.Arguments) (IBoard, error)
 	CreateChecklist(card ICard, name string, items []string, args trello.Arguments) (IChecklist, error)
 }
@@ -31,7 +31,8 @@ func (c *Client) GetBoard(boardID string, args trello.Arguments) (IBoard, error)
 }
 
 // CreateCard -
-func (c *Client) CreateCard(card *trello.Card, args trello.Arguments) (ICard, error) {
+func (c *Client) CreateCard(cardConfig *TrelloCardConfig, args trello.Arguments) (ICard, error) {
+	card := NewTrelloCard(cardConfig)
 	err := c.client.CreateCard(card, args)
 
 	if err != nil {
@@ -105,7 +106,7 @@ type (
 
 	// CreateCardCall -
 	CreateCardCall struct {
-		Card *trello.Card
+		Card ICard
 		Args trello.Arguments
 	}
 
@@ -137,7 +138,12 @@ func (c *MockClient) GetBoard(boardID string, args trello.Arguments) (IBoard, er
 }
 
 // CreateCard -
-func (c *MockClient) CreateCard(card *trello.Card, args trello.Arguments) (ICard, error) {
+func (c *MockClient) CreateCard(cardConfig *TrelloCardConfig, args trello.Arguments) (ICard, error) {
+	card := NewMockCard(&MockCardConfig{
+		ID:       cardConfig.ID,
+		Name:     cardConfig.Name,
+		IDLabels: cardConfig.IDLabels,
+	})
 	c.CreateCardCalls = append(c.CreateCardCalls, CreateCardCall{Card: card, Args: args})
 
 	// If a user needs to specify a card returned, then use this pathway
@@ -145,7 +151,7 @@ func (c *MockClient) CreateCard(card *trello.Card, args trello.Arguments) (ICard
 		return c.createCardReturn.Card, c.createCardReturn.Err
 	}
 
-	return NewCard(card), c.createCardReturn.Err
+	return card, c.createCardReturn.Err
 }
 
 // CreateChecklist -
