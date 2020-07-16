@@ -42,19 +42,26 @@ func TestRunApp(t *testing.T) {
 	logger.SetLevel(logrus.FatalLevel)
 
 	listID := "1234"
+	idLabels := []string{"id1", "id2"}
 	labels := []ollert.ILabel{
-		ollert.NewLabel(&trello.Label{ID: "id1", Name: "name1"}),
-		ollert.NewLabel(&trello.Label{ID: "id2", Name: "name2"}),
+		ollert.NewLabel(&trello.Label{ID: idLabels[0], Name: "label1"}),
+		ollert.NewLabel(&trello.Label{ID: idLabels[1], Name: "label2"}),
 	}
 
 	t.Run("Successfully creates a card with labels and checklist", func(t *testing.T) {
+		mockCard := ollert.NewMockCard(&ollert.MockCardConfig{
+			ID:       "card_id",
+			Name:     "card_name",
+			IDLabels: idLabels,
+		})
+
 		prompter := &prompt.MockPrompter{
-			PromptReturnValue: prompt.MockPrompterPromptReturnValue{S: "name1,name2", Err: nil},
+			PromptReturnValue: prompt.MockPrompterPromptReturnValue{S: mockCard.Name(), Err: nil},
 		}
 
 		mockBoard := ollert.NewMockBoard(&ollert.MockBoardConfig{
-			ID:              "id",
-			Name:            "name",
+			ID:              "board_id",
+			Name:            "board_name",
 			GetLabelsReturn: ollert.GetLabelsReturn{Labels: labels},
 		})
 
@@ -65,6 +72,7 @@ func TestRunApp(t *testing.T) {
 			CreateChecklistReturn: ollert.CreateChecklistReturn{
 				Checklist: ollert.NewCheckList(&trello.Checklist{}),
 			},
+			CreateCardReturn: ollert.CreateCardReturn{Card: mockCard},
 		}
 		client := ollert.NewMockClient(clientConfig)
 
@@ -84,13 +92,15 @@ func TestRunApp(t *testing.T) {
 
 		assertCallCount(t, len(client.CreateCardCalls), 1, "client.CreateCardCalls call count")
 
-		if card.ID() != client.CreateCardCalls[0].Card.ID {
+		if card.ID() != mockCard.ID() {
 			t.Errorf(
 				"Expected card ID %s, but got %s",
-				client.CreateCardCalls[0].Card.ID,
+				client.CreateCardCalls[0].Card.ID(),
 				card.ID(),
 			)
 		}
+
+		assertCallCount(t, mockCard.MoveToBottomOfListCallCount, 1, "card.MoveToBottomOfList call count")
 
 		// Validate prompter ---
 		assertCallCount(t, len(prompter.PromptCalls), 2, "Prompter.Prompt call count")
@@ -156,13 +166,15 @@ func TestRunApp(t *testing.T) {
 			GetLabelsReturn: ollert.GetLabelsReturn{Labels: labels},
 		})
 
+		mockCard := ollert.NewMockCard(&ollert.MockCardConfig{
+			ID:       "id",
+			Name:     "name",
+			IDLabels: idLabels,
+		})
+
 		clientConfig := &ollert.MockClientConfig{
-			GetBoardReturn: ollert.GetBoardReturn{
-				Board: mockBoard,
-			},
-			CreateCardReturn: ollert.CreateCardReturn{
-				Card: ollert.NewCard(&trello.Card{ID: "id"}),
-			},
+			GetBoardReturn:   ollert.GetBoardReturn{Board: mockBoard},
+			CreateCardReturn: ollert.CreateCardReturn{Card: mockCard},
 			CreateChecklistReturn: ollert.CreateChecklistReturn{
 				Checklist: ollert.NewCheckList(&trello.Checklist{}),
 			},

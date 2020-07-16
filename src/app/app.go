@@ -5,7 +5,6 @@ import (
 	"landau/agile-results/src/ollert"
 	"landau/agile-results/src/prompt"
 
-	"github.com/adlio/trello"
 	"github.com/sirupsen/logrus"
 )
 
@@ -64,11 +63,8 @@ func RunApp(config *Config) (ollert.ICard, error) {
 
 	logrus.Debugf("Selected %d labels: %v", len(selectedLabels), selectedLabels)
 
-	// FIXME: This should put the card at the end of  the list.
-	// err = card.MoveToBottomOfList() // TODO: add test using ICard
-
 	card, err := client.CreateCard(
-		&trello.Card{
+		&ollert.TrelloCardConfig{
 			IDList:   config.ListID,
 			Name:     cardName,
 			IDLabels: selectedLabels,
@@ -79,6 +75,8 @@ func RunApp(config *Config) (ollert.ICard, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	err = card.MoveToBottomOfList()
 
 	if config.HasChecklist {
 		items, err := prompter.PromptList("Checklist Items: ")

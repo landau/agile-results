@@ -1,6 +1,8 @@
 package ollert
 
-import "github.com/adlio/trello"
+import (
+	"github.com/adlio/trello"
+)
 
 // ICard -
 type ICard interface {
@@ -50,4 +52,77 @@ func (c *Card) IDLabels() []string {
 // NewCard - Use this to create a new Trello Card
 func NewCard(c *trello.Card) ICard {
 	return &Card{card: c}
+}
+
+type (
+	// MockCardConfig -
+	MockCardConfig struct {
+		TrelloCardConfig
+		ID       string
+		Name     string
+		Card     *trello.Card
+		ShortURL string
+		IDLabels []string
+		IDList   string
+
+		// Methods
+		MoveToBottomOfListReturnValue error
+	}
+
+	// MockCard -
+	MockCard struct {
+		id       string
+		name     string
+		card     *trello.Card
+		shortURL string
+		idLabels []string
+
+		// Mocked methods
+		MoveToBottomOfListCallCount   int
+		moveToBottomOfListReturnValue error
+	}
+)
+
+// MoveToBottomOfList -
+func (c *MockCard) MoveToBottomOfList() error {
+	c.MoveToBottomOfListCallCount++
+	return c.moveToBottomOfListReturnValue
+}
+
+// Card -
+func (c *MockCard) Card() *trello.Card {
+	return c.card
+}
+
+// ID -
+func (c *MockCard) ID() string {
+	return c.id
+}
+
+// Name -
+func (c *MockCard) Name() string {
+	return c.name
+}
+
+// ShortURL -
+func (c *MockCard) ShortURL() string {
+	return c.shortURL
+}
+
+// IDLabels -
+func (c *MockCard) IDLabels() []string {
+	return c.idLabels
+}
+
+// NewMockCard - Use this to create a new Trello MockCard
+func NewMockCard(c *MockCardConfig) *MockCard {
+	return &MockCard{
+		id:       c.ID,
+		name:     c.Name,
+		card:     c.Card,
+		shortURL: c.ShortURL,
+		idLabels: c.IDLabels,
+
+		moveToBottomOfListReturnValue: c.MoveToBottomOfListReturnValue,
+	}
 }
