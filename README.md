@@ -57,26 +57,22 @@ go run main.go
     they can jump right to the card.~~
   - ~~A verbose mode would be nice to see underlying commands.~~
   - ~~Modify to accept card name as command line input via prompt~~
-  - 100% test coverage at this point is mandatory.
   - ~~Setup travis~~
-- Sets a label(s) for new card
-  - Cache label data in file (need a way(s) to refresh cache)
-  - ~~This feels better as a prompt style program because I don't want to type out
-    label names or remember numbers. Also, how do I select multiple in a prompt
-    style interface? "Select your labels: 1. Health 2. Relationships 3...." could
-    work here via CSV input.~~
-- Append a checklist to said card
-  - CSV Input
-- Automatically create cards based on checklist
+- ~~Sets a label(s) for new card~~
+- ~~Append a checklist to said card~~
+- Automatically create cards based on checklist (via flag)
 - Appends links for "checklist item cards" to "parent card"
 - Appends link to parent card from "checklist item cards"
-- Sort command Ideas column based on label
+- Append card to bottom of list
+- 100% test coverage
 
 ### Post-MVP
 
+- Cache data in file to reduce card creation time (need a way(s) to refresh cache)
 - Set position of card in daily column
-  - Or, ask if it's a priorty and that will determine top or bottom. This fits
+  - Or, ask if it's a `--priorty` and that will determine top or bottom. This fits
     the domain model better.
 - Provide a description for newly created card
 - Create card in any column!
 - Assign user to card
+- Sort command Ideas column based on label
