@@ -2,7 +2,7 @@ package app
 
 import (
 	"fmt"
-	"landau/agile-results/src/checklist"
+	"landau/agile-results/src/ollert"
 	"landau/agile-results/src/prompt"
 
 	"github.com/adlio/trello"
@@ -16,30 +16,20 @@ func createCurlDelCmd(cardID string) string {
 	)
 }
 
-// CardCreator -
-type CardCreator interface {
-	CreateCard(card *trello.Card, extraArgs trello.Arguments) error
-}
-
-// TODO: Refactor the creators and fetchers to be a trello client wrapper in which
-// I wrap the functionality and provide a mockable interface as well. It is
-// quiet burdensome to use the trello api and contously provide interdependent
-// interfaces for all the actions I want to perform.
-
 // Config -
 type Config struct {
-	CardCreator      CardCreator
-	ChecklistCreator checklist.Creator
-	HasChecklist     bool
-	LabelFetcher     LabelFetcher
-	ListID           string
-	Logrus           *logrus.Logger
-	Prompter         prompt.Prompter
+	BoardID      string
+	ListID       string
+	HasChecklist bool
+
+	Client   ollert.IClient
+	Logrus   *logrus.Logger
+	Prompter prompt.Prompter
 }
 
 // RunApp -
-func RunApp(config *Config) (*trello.Card, error) {
-	cardCreator := config.CardCreator
+func RunApp(config *Config) (ollert.ICard, error) {
+	client := config.Client
 	logrus := config.Logrus
 	prompter := config.Prompter
 
@@ -52,38 +42,39 @@ func RunApp(config *Config) (*trello.Card, error) {
 		return nil, err
 	}
 
-	labels, err := config.LabelFetcher.Fetch(trello.Defaults())
+	board, err := client.GetBoard(config.BoardID, ollert.Defaults())
 
 	if err != nil {
 		return nil, err
 	}
 
-	// I think it may be cleaner, def faster, to store things locally.
-	// Through a dot file with json inside? Works nicely as a backup space as well.
-	// Not sure what it would be for yet. I reduce API usage and have data more
-	// readily available. Basically, have everything on hand except for card
-	// creation. In fact, I could use that mechanism as way to build my own
-	// data model. Perhaps a review of the Trello API to determine some capablities
-	// that I am unaware of.
-	//
-	// The domains would then be relevant locally stored Trello data,
-	// the AR domain, which is creating a card in a certain column, making it
-	// easier to add labels, and create linked subtasks from a checklist.
-	// By removing the Trello API, aside from CardCreator
+	labels, err := board.GetLabels(ollert.Defaults())
 
-	// Refactor: This method should not be concerned with `prompter`
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: I think it may be cleaner/faster to store things locally.
+	// Through a dot file with json inside?
+	// TODO: This method should not be concerned with `prompter`
 	selectedLabels, err := SelectLabelIDs(labels, prompter)
+	if err != nil {
+		return nil, err
+	}
+
 	logrus.Debugf("Selected %d labels: %v", len(selectedLabels), selectedLabels)
 
 	// FIXME: This should put the card at the end of  the list.
-	// err = card.MoveToBottomOfList() // How to test this?
-	card := &trello.Card{
-		IDList:   config.ListID,
-		Name:     cardName,
-		IDLabels: selectedLabels,
-	}
+	// err = card.MoveToBottomOfList() // TODO: add test using ICard
 
-	err = cardCreator.CreateCard(card, trello.Defaults())
+	card, err := client.CreateCard(
+		&trello.Card{
+			IDList:   config.ListID,
+			Name:     cardName,
+			IDLabels: selectedLabels,
+		},
+		ollert.Defaults(),
+	)
 
 	if err != nil {
 		return nil, err
@@ -96,11 +87,10 @@ func RunApp(config *Config) (*trello.Card, error) {
 			return nil, err
 		}
 
-		_, err = config.ChecklistCreator.Create(card, items)
+		_, err = client.CreateChecklist(card, "Checklist", items, ollert.Defaults())
 
 		if err != nil {
-			// If it fails here, do we delete the card? Then we need a CardDeleter :(
-			// See note above about a TrelloWrapper which limits access to the API
+			// If it fails here, do we delete the card?
 			return nil, err
 		}
 	}
@@ -108,7 +98,7 @@ func RunApp(config *Config) (*trello.Card, error) {
 	// TODO: Refactor this to be an expected response like { Card, Curl: {} }?
 	logrus.Infof(
 		"Card \"%s\" created successfully!\nID: %s\nURL: %s\nDelete: %s\n",
-		card.Name, card.ID, card.ShortURL, createCurlDelCmd(card.ID),
+		card.Name(), card.ID(), card.ShortURL(), createCurlDelCmd(card.ID()),
 	)
 
 	return card, nil

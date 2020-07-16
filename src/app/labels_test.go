@@ -1,6 +1,7 @@
 package app
 
 import (
+	"landau/agile-results/src/ollert"
 	"landau/agile-results/src/prompt"
 	"reflect"
 	"testing"
@@ -10,22 +11,25 @@ import (
 )
 
 func Test_filter(t *testing.T) {
-	labels := []*trello.Label{{Name: "foo"}, {Name: "bar"}}
+	labels := []ollert.ILabel{
+		ollert.NewLabel(&trello.Label{Name: "foo"}),
+		ollert.NewLabel(&trello.Label{Name: "bar"}),
+	}
 
 	type args struct {
-		labels []*trello.Label
-		f      func(l *trello.Label) bool
+		labels []ollert.ILabel
+		f      func(l ollert.ILabel) bool
 	}
 
 	tests := []struct {
 		name string
 		args args
-		want []*trello.Label
+		want []ollert.ILabel
 	}{
 		{
 			"Returns matching labels",
-			args{labels: labels, f: func(l *trello.Label) bool { return l.Name == labels[0].Name }},
-			[]*trello.Label{labels[0]},
+			args{labels: labels, f: func(l ollert.ILabel) bool { return l.Name() == labels[0].Name() }},
+			[]ollert.ILabel{labels[0]},
 		},
 	}
 
@@ -40,11 +44,14 @@ func Test_filter(t *testing.T) {
 
 func Test_mapLabelsToString(t *testing.T) {
 	ids := []string{"foo", "bar"}
-	labels := []*trello.Label{{ID: ids[0]}, {ID: ids[1]}}
+	labels := []ollert.ILabel{
+		ollert.NewLabel(&trello.Label{ID: ids[0]}),
+		ollert.NewLabel(&trello.Label{ID: ids[1]}),
+	}
 
 	type args struct {
-		labels []*trello.Label
-		f      func(l *trello.Label) string
+		labels []ollert.ILabel
+		f      func(l ollert.ILabel) string
 	}
 
 	tests := []struct {
@@ -54,7 +61,7 @@ func Test_mapLabelsToString(t *testing.T) {
 	}{
 		{
 			"Maps Label.ID to a []string",
-			args{labels: labels, f: func(l *trello.Label) string { return l.ID }},
+			args{labels: labels, f: func(l ollert.ILabel) string { return l.ID() }},
 			ids,
 		},
 	}
@@ -70,28 +77,33 @@ func Test_mapLabelsToString(t *testing.T) {
 
 func Test_filterLabelsFromLabelNames(t *testing.T) {
 	names := []string{"foo"}
-	labels := []*trello.Label{{Name: names[0]}, {Name: "bar"}}
+	labels := []ollert.ILabel{
+		ollert.NewLabel(&trello.Label{Name: names[0]}),
+		ollert.NewLabel(&trello.Label{Name: "bar"}),
+	}
 
 	type args struct {
 		names  []string
-		labels []*trello.Label
+		labels []ollert.ILabel
 	}
 
 	tests := []struct {
 		name string
 		args args
-		want []*trello.Label
+		want []ollert.ILabel
 	}{
 		{
 			"Filters Labels based on a []string of Label.Name",
 			args{names: names, labels: labels},
-			[]*trello.Label{labels[0]},
+			[]ollert.ILabel{labels[0]},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := filterLabelsFromLabelNames(tt.args.names, tt.args.labels); !reflect.DeepEqual(got, tt.want) {
+			got := filterLabelsFromLabelNames(tt.args.names, tt.args.labels)
+
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("filterLabelsFromLabelNames() = %v, want %v", got, tt.want)
 			}
 		})
@@ -99,10 +111,17 @@ func Test_filterLabelsFromLabelNames(t *testing.T) {
 }
 
 func TestSelectLabelIDs(t *testing.T) {
-	labels := []*trello.Label{{ID: "id", Name: "name"}}
+	labels := []ollert.ILabel{
+		ollert.NewLabel(&trello.Label{ID: "id", Name: "name"}),
+	}
 
 	t.Run("Returns a list of selected labels", func(t *testing.T) {
-		prompter := &prompt.MockPrompter{PromptReturnValue: prompt.MockPrompterPromptReturnValue{S: labels[0].Name, Err: nil}}
+		prompter := &prompt.MockPrompter{
+			PromptReturnValue: prompt.MockPrompterPromptReturnValue{
+				S: labels[0].Name(), Err: nil,
+			},
+		}
+
 		got, err := SelectLabelIDs(labels, prompter)
 
 		if err != nil {
@@ -110,7 +129,7 @@ func TestSelectLabelIDs(t *testing.T) {
 			return
 		}
 
-		want := []string{labels[0].ID}
+		want := []string{labels[0].ID()}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("SelectLabelIDs() = %v, want %v", got, want)
 		}
@@ -118,7 +137,11 @@ func TestSelectLabelIDs(t *testing.T) {
 
 	t.Run("Returns a list of selected labels", func(t *testing.T) {
 		expectedErr := errors.Errorf("Test error")
-		prompter := &prompt.MockPrompter{PromptReturnValue: prompt.MockPrompterPromptReturnValue{S: "", Err: expectedErr}}
+		prompter := &prompt.MockPrompter{
+			PromptReturnValue: prompt.MockPrompterPromptReturnValue{
+				S: "", Err: expectedErr,
+			},
+		}
 		_, err := SelectLabelIDs(labels, prompter)
 
 		if err != expectedErr {

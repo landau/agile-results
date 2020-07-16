@@ -4,11 +4,10 @@ import (
 	"bufio"
 	"flag"
 	"landau/agile-results/src/app"
-	"landau/agile-results/src/checklist"
+	"landau/agile-results/src/ollert"
 	"landau/agile-results/src/prompt"
 	"os"
 
-	"github.com/adlio/trello"
 	"github.com/sirupsen/logrus"
 )
 
@@ -41,14 +40,12 @@ func main() {
 	listID := os.Getenv("TRELLO_LIST_ID")
 	boardID := os.Getenv("TRELLO_BOARD_ID")
 
-	client := trello.NewClient(apiKey, token)
-	client.Logger = logger
+	client := ollert.NewClient(apiKey, token, logger)
 
 	_, err := app.RunApp(&app.Config{
-		CardCreator:      client,
-		ChecklistCreator: checklist.New(client),
-		HasChecklist:     flags.hasChecklist,
-		LabelFetcher:     app.NewLabelFetcher(app.NewBoardFetcher(boardID, client)),
+		BoardID:      boardID,
+		Client:       client,
+		HasChecklist: flags.hasChecklist,
 		// TODO: move to CardCreator
 		ListID: listID,
 		Logrus: logger,

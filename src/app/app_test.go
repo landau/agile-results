@@ -2,7 +2,7 @@ package app
 
 import (
 	"fmt"
-	"landau/agile-results/src/checklist"
+	"landau/agile-results/src/ollert"
 	"landau/agile-results/src/prompt"
 	"reflect"
 	"testing"
@@ -37,67 +37,62 @@ func Test_createCurlDelCmd(t *testing.T) {
 	}
 }
 
-type MockCardCreatorCall struct {
-	card *trello.Card
-	args trello.Arguments
-}
-
-type MockCardCreator struct {
-	calls       []MockCardCreatorCall
-	returnValue error
-}
-
-func (c *MockCardCreator) CreateCard(card *trello.Card, extraArgs trello.Arguments) error {
-	c.calls = append(c.calls, MockCardCreatorCall{card: card, args: extraArgs})
-	return nil
-}
-
-type LabelFetcherReturnValue struct {
-	labels []*trello.Label
-	err    error
-}
-
-type MockLabelFetcher struct {
-	calls       []trello.Arguments
-	returnValue LabelFetcherReturnValue
-}
-
-func (l *MockLabelFetcher) Fetch(args trello.Arguments) (labels []*trello.Label, err error) {
-	l.calls = append(l.calls, args)
-	return l.returnValue.labels, l.returnValue.err
-}
-
 func TestRunApp(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.FatalLevel)
 
 	listID := "1234"
-	labels := []*trello.Label{{ID: "abc", Name: "foo"}, {ID: "efg", Name: "bar"}}
+	labels := []ollert.ILabel{
+		ollert.NewLabel(&trello.Label{ID: "id1", Name: "name1"}),
+		ollert.NewLabel(&trello.Label{ID: "id2", Name: "name2"}),
+	}
 
 	t.Run("Successfully creates a card with labels and checklist", func(t *testing.T) {
 		prompter := &prompt.MockPrompter{
-			PromptReturnValue: prompt.MockPrompterPromptReturnValue{S: "foo,bar", Err: nil},
-		}
-		cardCreator := &MockCardCreator{}
-		labelFetcher := &MockLabelFetcher{returnValue: LabelFetcherReturnValue{labels: labels}}
-
-		checklistCreator := &checklist.MockCreator{
-			CreateReturnValue: checklist.MockCreateReturnValue{},
+			PromptReturnValue: prompt.MockPrompterPromptReturnValue{S: "name1,name2", Err: nil},
 		}
 
-		config := &Config{
-			CardCreator:      cardCreator,
-			ChecklistCreator: checklistCreator,
-			LabelFetcher:     labelFetcher,
-			ListID:           listID,
-			Logrus:           logger,
-			Prompter:         prompter,
+		mockBoard := ollert.NewMockBoard(&ollert.MockBoardConfig{
+			ID:              "id",
+			Name:            "name",
+			GetLabelsReturn: ollert.GetLabelsReturn{Labels: labels},
+		})
+
+		clientConfig := &ollert.MockClientConfig{
+			GetBoardReturn: ollert.GetBoardReturn{
+				Board: mockBoard,
+			},
+			CreateChecklistReturn: ollert.CreateChecklistReturn{
+				Checklist: ollert.NewCheckList(&trello.Checklist{}),
+			},
+		}
+		client := ollert.NewMockClient(clientConfig)
+
+		appConfig := &Config{
+			Client:   client,
+			ListID:   listID,
+			Logrus:   logger,
+			Prompter: prompter,
 		}
 
-		RunApp(config)
+		card, err := RunApp(appConfig)
 
-		assertCallCount(t, len(labelFetcher.calls), 1, "LabelFetcher.Fetch call count")
-		assertCallCount(t, len(cardCreator.calls), 1, "CardCreatore.CreateCard call count")
+		if err != nil {
+			t.Errorf("An unexpected error occured: %v", err)
+			return
+		}
+
+		assertCallCount(t, len(client.CreateCardCalls), 1, "client.CreateCardCalls call count")
+
+		if card.ID() != client.CreateCardCalls[0].Card.ID {
+			t.Errorf(
+				"Expected card ID %s, but got %s",
+				client.CreateCardCalls[0].Card.ID,
+				card.ID(),
+			)
+		}
+
+		// Validate prompter ---
 		assertCallCount(t, len(prompter.PromptCalls), 2, "Prompter.Prompt call count")
 		assertCallCount(t, len(prompter.PromptListCalls), 0, "Prompter.PromptList call count")
 
@@ -105,86 +100,109 @@ func TestRunApp(t *testing.T) {
 			t.Error("Expected Prompter.Prompt to recevie 'Card Name: '")
 		}
 
-		prompt2 := fmt.Sprintf("Selected 2 labels (%v, %v): ", labels[0].Name, labels[1].Name)
+		prompt2 := fmt.Sprintf(
+			"Selected 2 labels (%v, %v): ", labels[0].Name(), labels[1].Name(),
+		)
 		if prompter.PromptCalls[1] != prompt2 {
 			t.Errorf("Expected Prompter.Prompt to recevie '%s', got '%s", prompt2, prompter.PromptCalls[1])
 		}
 
-		if prompter.PromptReturnValue.S != cardCreator.calls[0].card.Name {
+		if prompter.PromptReturnValue.S != card.Name() {
 			t.Errorf(
 				"Card name should be = %s, but got %s",
 				prompter.PromptReturnValue.S,
-				cardCreator.calls[0].card.Name,
+				card.Name(),
 			)
 		}
 
-		card := cardCreator.calls[0].card
+		// Validate labels ---
+		assertCallCount(t, len(mockBoard.GetLabelsCalls), 1, "board.GetLabelCalls call count")
 
-		// TODO: use deepequal on entire list here instead
-		if card.IDLabels[0] != labels[0].ID {
+		if len(card.IDLabels()) < 1 {
+			t.Error("Expected card to have > 0 IDLabels")
+		}
+
+		if card.IDLabels()[0] != labels[0].ID() {
 			t.Errorf(
 				"Card should have label = %s, but got %s",
-				labels[0].ID,
-				cardCreator.calls[0].card.IDLabels[0],
+				labels[0].ID(),
+				card.IDLabels()[0],
 			)
 		}
 
-		if card.IDLabels[1] != labels[1].ID {
+		if card.IDLabels()[1] != labels[1].ID() {
 			t.Errorf(
 				"Card should have label = %s, but got %s",
-				labels[1].ID,
-				cardCreator.calls[0].card.IDLabels[1],
+				labels[1].ID(),
+				card.IDLabels()[1],
 			)
 		}
 
-		assertCallCount(t, len(checklistCreator.Calls), 0, "CheckListCreator.Creator call count")
+		// Validate Checklist ---
+		assertCallCount(
+			t, len(client.CreateChecklistCalls), 0, "client.CreateChecklistCalls call count",
+		)
 	})
 
 	t.Run("Creates a card with a checklist", func(t *testing.T) {
 		prompter := &prompt.MockPrompter{
-			PromptReturnValue:     prompt.MockPrompterPromptReturnValue{S: "foo,bar", Err: nil},
+			PromptReturnValue:     prompt.MockPrompterPromptReturnValue{S: "name1,name2", Err: nil},
 			PromptListReturnValue: prompt.MockPrompterPromptListReturnValue{Items: []string{"list"}},
 		}
-		cardCreator := &MockCardCreator{}
-		labelFetcher := &MockLabelFetcher{returnValue: LabelFetcherReturnValue{labels: labels}}
 
-		checklistCreator := &checklist.MockCreator{
-			CreateReturnValue: checklist.MockCreateReturnValue{},
+		mockBoard := ollert.NewMockBoard(&ollert.MockBoardConfig{
+			ID:              "id",
+			Name:            "name",
+			GetLabelsReturn: ollert.GetLabelsReturn{Labels: labels},
+		})
+
+		clientConfig := &ollert.MockClientConfig{
+			GetBoardReturn: ollert.GetBoardReturn{
+				Board: mockBoard,
+			},
+			CreateCardReturn: ollert.CreateCardReturn{
+				Card: ollert.NewCard(&trello.Card{ID: "id"}),
+			},
+			CreateChecklistReturn: ollert.CreateChecklistReturn{
+				Checklist: ollert.NewCheckList(&trello.Checklist{}),
+			},
+		}
+		client := ollert.NewMockClient(clientConfig)
+
+		appConfig := &Config{
+			Client:       client,
+			HasChecklist: true,
+			ListID:       listID,
+			Logrus:       logger,
+			Prompter:     prompter,
 		}
 
-		config := &Config{
-			CardCreator:      cardCreator,
-			ChecklistCreator: checklistCreator,
-			HasChecklist:     true,
-			LabelFetcher:     labelFetcher,
-			ListID:           listID,
-			Logrus:           logger,
-			Prompter:         prompter,
+		card, err := RunApp(appConfig)
+		if err != nil {
+			t.Errorf("Unexpected Error: %v", err)
 		}
-
-		RunApp(config)
-
-		card := cardCreator.calls[0].card
 
 		assertCallCount(t, len(prompter.PromptListCalls), 1, "Prompter.PromptList call count")
-		assertCallCount(t, len(checklistCreator.Calls), 1, "CheckListCreator.Creator call count")
+		assertCallCount(
+			t, len(client.CreateChecklistCalls), 1, "client.CreateChecklistCalls call count",
+		)
 
-		if checklistCreator.Calls[0].Card != card {
+		if client.CreateChecklistCalls[0].Card.ID() != card.ID() {
 			t.Errorf(
 				"Checklist should have been called with %v, but got %v",
-				card,
-				checklistCreator.Calls[0].Card,
+				card.ID(),
+				client.CreateChecklistCalls[0].Card.ID(),
 			)
 		}
 
-		if !reflect.DeepEqual(checklistCreator.Calls[0].Items, []string{"list"}) {
+		items := client.CreateChecklistCalls[0].Items
+		if !reflect.DeepEqual(items, []string{"list"}) {
 			t.Errorf(
 				"Checklist should have been called with %v, but got %v",
 				[]string{"list"},
-				checklistCreator.Calls[0].Items,
+				items,
 			)
 		}
-
 	})
 }
 
